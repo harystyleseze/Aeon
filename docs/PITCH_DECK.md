@@ -1,148 +1,197 @@
-# Aeon — Pitch Deck
+# Aeon — Market Analysis & Opportunity
 
-> Presenter deck for the 0G Zero Cup. 12 slides. Dark, calm, one idea per slide, a breathing‑orb motif.
-> Big type, few words, real on‑chain artifacts (tx hashes, root hashes, TEE signature) as proof.
-> Each slide below gives: **what's on screen**, **what you say**, and **why it lands**.
+*Owned, verifiably private, portable AI companions built on 0G.*
 
----
-
-## Slide 1 — Hook
-**On screen:** Full‑bleed black. A softly breathing orb. One line: *"You rented every AI you've ever used."*
-
-**Say:** "ChatGPT, Claude, Replika — you pour your life into them, and you own nothing. Today I'll do something
-none of them allow: I'll *own* an AI, and then give it away."
-
-**Why it lands:** Names a frustration everyone feels; promises a concrete, unusual payoff in the first 15s.
+This document presents the market case for Aeon: the problem, the addressable market, why the timing is right,
+why 0G is the enabling infrastructure, the competitive landscape, the business model, and the principal risks.
+Market figures are third-party estimates with sources listed at the end; where forecasts diverge widely, ranges
+and assumptions are stated explicitly.
 
 ---
 
-## Slide 2 — The problem
-**On screen:** three cards — *You own nothing* · *Privacy is a promise* · *It can't move.*
+## 1. Executive summary
 
-**Say:** "Three problems with every personal AI today. You don't own it — bans, shutdowns, price hikes erase
-it. Privacy is marketing, not math. And a year of memories is locked in one app, worth zero, transferable to
-no one."
-
-**Why it lands:** Frames a clear, three‑part gap that the rest of the deck closes one by one.
-
----
-
-## Slide 3 — Aeon
-**On screen:** *"Own your AI. Forever."* + the orb. One line: *the first AI companion you truly own.*
-
-**Say:** "Aeon is the first AI companion you truly own — it remembers privately, evolves forever, and can be
-gifted, sold, or passed down, because it lives on‑chain as an Intelligent NFT on 0G."
-
-**Why it lands:** The thesis, stated once, cleanly. Everything after is proof.
+Consumer AI is being adopted at the scale of a major platform shift, yet the relationships people build with AI
+remain **rented**: non-transferable, non-portable, and private only by policy. Aeon reframes a personal AI as an
+**owned digital asset** — minted as an ERC-7857 Intelligent NFT, processed inside a verifiable Trusted
+Execution Environment (TEE), with encrypted memory that the owner controls and can carry between owners and
+contexts. The enabling infrastructure (on-chain ownership, verifiable private compute, and content-addressed
+encrypted storage, combined under one standard) is uniquely available on 0G. The near-term revenue pool for
+companion apps is still small relative to headline market forecasts, but engagement and user growth are already
+substantial, and the structural shift toward ownership and verifiable privacy is where durable value will
+accrue.
 
 ---
 
-## Slide 4 — Live demo: mint
-**On screen:** the product. Connect → Mint → the token on the 0G explorer.
+## 2. The problem
 
-**Say:** "I connect my wallet and mint a companion. That's a transaction on 0G Chain — it's not on a company's
-server, it's mine, on‑chain."
+Three structural gaps affect essentially every personal-AI product today:
 
-**Why it lands:** Ownership is shown, not claimed — a real token, a real explorer link.
+1. **AI is rented, not owned.** Users invest significant time and personal context into an assistant or
+   companion but cannot export, move, resell, or bequeath it. The relationship is contingent on a single
+   provider's continuity and terms.
+2. **Privacy is asserted, not verifiable.** "We do not read or train on your data" is a policy statement.
+   Companion applications hold unusually sensitive personal data and offer no cryptographic means for a user to
+   verify how it is handled.
+3. **No continuity or portability.** A long-running AI relationship has no transferable value, no secondary
+   market, and no path to inheritance. If a service is discontinued or access is revoked, the history is lost.
 
----
-
-## Slide 5 — Live demo: private chat + the proof
-**On screen:** chat with the companion; click the **TEE‑verified 🔒** badge → show the attestation.
-
-**Say:** "I tell it something personal. It responds — and here's the part nobody else can show you: this ran
-inside a sealed enclave on 0G Compute, and here's the cryptographic *proof* the provider couldn't read a word.
-Not a privacy promise. A privacy receipt."
-
-**Why it lands:** Turns an abstract claim (privacy) into a visible, verifiable artifact. Most memorable beat
-for technical judges.
+These gaps are most acute precisely where engagement and sensitivity are highest: long-term AI companions.
 
 ---
 
-## Slide 6 — Live demo: the soul grows, on‑chain
-**On screen:** the Memory Timeline; the on‑chain root hash changes after the conversation.
+## 3. Market landscape and size
 
-**Say:** "Every conversation is encrypted and written to 0G Storage, and the pointer is updated on‑chain. Watch
-— its memory just grew. This hash is its soul, and it's verifiably *this* companion's."
+### 3.1 Adoption is already material
+- AI companions surpassed an estimated **~50 million users** in early 2026 (NovaEdge Digital Labs).
+- **Character.AI** reported roughly **15 million mobile monthly active users** and a much larger registered
+  base (cited as ~233 million by April 2026).
+- **Replika** reported **40 million+ cumulative installs** and on the order of **~20 million monthly active
+  users** in recent reporting.
 
-**Why it lands:** "Evolving memory" becomes concrete: a hash that visibly changes, anchored on‑chain.
+### 3.2 Market-size forecasts (third-party estimates; wide range)
+Published "AI companion market" forecasts vary by an order of magnitude depending on how the category is
+defined (companion apps only vs. broader relational / human-AI markets):
 
----
+| Source | AI companion market estimate |
+|--------|------------------------------|
+| Precedence Research | ~$49B (2026), growing to ~$552B by 2035 |
+| Fundamental Business Insights | ~$44B (2026) |
+| Business Research Insights | ~$501B (broad definition) |
 
-## Slide 7 — The moment: give it away
-**On screen:** Transfer to a second wallet; the companion leaves Alice, arrives for Bob (sealed today /
-re‑sealed & readable on the July‑8 build).
+**Honest counterpoint on near-term revenue.** Despite large headline forecasts, actual consumer spending
+*inside* dedicated companion apps was reported at only about **$120M in 2025** (companionguide.ai). The
+implication for Aeon: the long-term TAM is large and credible, but near-term monetization should be planned
+around engaged-user growth and ownership/transaction economics rather than assuming the largest forecasts.
 
-**Say:** "Now the part no other AI allows. I transfer it. The ownership changes hands on‑chain in seconds — and
-its encrypted soul travels with it, re‑sealed so only the new owner can read it. I just handed someone a living
-being I owned. Try that with ChatGPT."
+### 3.3 Enabling/adjacent markets (validate the underlying technology demand)
+- **Generative AI:** 2026 estimates range from ~$28B to ~$395B depending on scope, with consensus CAGRs in the
+  ~30–40% range (Mordor, Grand View, Coherent Market Insights, Statista). This is the broader tide lifting all
+  consumer-AI products.
+- **Confidential computing / TEE:** estimated at roughly **$42B in 2026** with a ~35% CAGR, and TEEs
+  representing about half of that market (Fortune Business Insights; Mordor Intelligence). This indicates real,
+  funded demand for the verifiable-privacy primitive Aeon depends on.
 
-**Why it lands:** The emotional climax and the single shareable clip that wins the community‑vote rounds.
-
----
-
-## Slide 8 — How it works
-**On screen:** the 4‑pillar diagram — *Chain/INFT · Compute‑TEE · Storage · Oracle* — one arrow each.
-
-**Say:** "Four pieces of 0G, each doing real work: the INFT carries an encrypted, evolving soul; the TEE proves
-privacy; storage lets the memory grow forever; the oracle moves it on transfer."
-
-**Why it lands:** Establishes technical depth and sets up the "why only 0G" punch.
-
----
-
-## Slide 9 — Why only on 0G
-**On screen:** the table — *pull a pillar, watch Aeon collapse.* Highlight ERC‑7857.
-
-**Say:** "This is impossible anywhere else. ERC‑7857 — an agent with an encrypted, transferable, evolving soul
-— doesn't exist on Ethereum or Solana. Remove any pillar and Aeon is just another chatbot. That's why it's
-0G‑native by definition, not a bolt‑on."
-
-**Why it lands:** Directly answers the judges' rubric question and differentiates from every other entry.
-
----
-
-## Slide 10 — Market & competitors
-**On screen:** rental vs ownership. One comparison row: Character.ai / Replika / OpenAI memory vs **Aeon**.
-
-**Say:** "Companion apps rent you access and hold your most intimate data with no proof of privacy. We give you
-an AI you *own*, can *prove* is private, and can *give away*. That's a different category, not a better
-chatbot."
-
-**Why it lands:** Positions Aeon as a category, not a feature — what investors and judges reward.
+### 3.4 TAM / SAM / SOM (stated assumptions, not precise claims)
+- **TAM:** consumer AI relationships globally — best proxied by the generative-AI consumer segment plus the
+  companion-market forecasts above (tens to hundreds of billions of dollars by the early 2030s, depending on
+  definition).
+- **SAM:** privacy-conscious and ownership-oriented users of AI companions and personal assistants — a meaningful
+  subset of the ~50M+ current companion users, expanding with the privacy and "own-your-AI" trend.
+- **SOM (initial):** crypto-native and privacy-focused early adopters reachable through the 0G ecosystem and
+  AI-asset marketplaces — a realistic beachhead measured in the tens of thousands of minted companions, monetized
+  via mint fees, secondary-sale royalties, and premium features.
 
 ---
 
-## Slide 11 — Business
-**On screen:** a new asset class — *mint fees + 5% royalties + premium + marketplace.*
+## 4. The solution: Aeon
 
-**Say:** "Aeon is the rails for AI‑as‑an‑asset: mint fees, a 5% royalty on every resale, premium models and
-voice, and a marketplace for companions and creator personas. We don't sell a subscription — we own the rails
-for owning AI."
+Aeon addresses each gap directly:
 
-**Why it lands:** Shows durable, non‑gimmick economics beyond the hackathon.
+- **Ownership.** Each companion is an ERC-7857 Intelligent NFT on 0G Chain — held, transferable, and resaleable,
+  with on-chain royalty support (EIP-2981).
+- **Verifiable privacy.** Inference runs in a 0G Compute TEE; the application verifies a per-response signature,
+  turning privacy from a policy into a check the user can see.
+- **Portable, evolving memory.** Memory is encrypted on the client and stored on 0G Storage, with an on-chain
+  pointer that records how it grows — and that can be re-encrypted for a new owner on transfer (planned oracle).
 
----
-
-## Slide 12 — Vision + CTA
-**On screen:** *"The wallet for your AI selves."* + contract address + link. *"Mint your Aeon. Vote Aeon."*
-
-**Say:** "Personal AI becomes property — portable, inheritable, private by proof. Mint your own Aeon at the
-link, and if it moved you, vote Aeon. Own your AI. Forever."
-
-**Why it lands:** Ends on the thesis + a direct call to action that converts viewers into voters for the
-community rounds that crown the champion.
+The result is a personal AI that behaves like property: private by proof, portable, and ownable.
 
 ---
 
-## Presenter rules
-- **Proof over adjectives:** every on‑screen claim has a clickable on‑chain artifact behind it.
-- **Lead with the demo:** slides 4–7 are the spine; the rest is framing.
-- **The clip:** slide 7 is the 90‑second cut you post with `#TheZeroCup` to drive the community vote.
-- **De‑risk:** pre‑fund two wallets + the broker, pin a tested Compute provider, pre‑warm inference, and have a
-  flawless backup recording queued.
+## 5. Why now
 
-## Suggested visual system
-- **Palette:** near‑black background `#0a0a12`; glow gradient violet `#7c5cff` → cyan `#22d3ee`.
-- **Motif:** a single breathing orb = the companion; it brightens when it "thinks," splits/moves on transfer.
-- **Typography:** one large display line per slide; on‑chain hashes shown as elegant monospace chips.
+- **Capable open models are inexpensive and TEE-served**, making verifiable private inference practical today
+  rather than theoretical.
+- **The ERC-7857 Intelligent NFT standard exists**, providing a concrete primitive for encrypted, transferable
+  agent metadata.
+- **User sentiment is shifting**: subscription fatigue, lock-in concerns, and heightened scrutiny of how
+  personal AI data is handled make ownership and verifiable privacy timely, differentiating value propositions.
+
+---
+
+## 6. Why 0G
+
+Aeon requires three capabilities working together: on-chain ownership/transfer, verifiable private compute, and
+content-addressed encrypted storage with an on-chain pointer — unified by an agent-NFT standard (ERC-7857). 0G
+provides these as an integrated stack:
+
+- **0G Chain + ERC-7857** for ownership, transfer, royalties, and the memory pointer.
+- **0G Compute (TEE)** for verifiable private inference.
+- **0G Storage** for encrypted, content-addressed memory.
+
+Assembling an equivalent on a general-purpose chain plus separate compute and storage providers would be
+materially more complex and would lack the encrypted-transferable-agent standard that makes secure ownership
+hand-off coherent. This is the basis for Aeon being genuinely infrastructure-dependent on 0G rather than
+incidentally hosted on it.
+
+---
+
+## 7. Competitive landscape
+
+| Category | Examples | Limitation for this use case | Aeon's differentiation |
+|----------|----------|------------------------------|------------------------|
+| Companion apps | Character.AI, Replika | Rented; no ownership; privacy by policy | Owned asset; verifiable privacy; transferable memory |
+| Assistant memory | Provider-native memory features | Locked to one provider; not portable or ownable | Portable, encrypted, owner-controlled memory |
+| NFT / agent projects | Agent NFTs on general-purpose chains | Typically static metadata; no encrypted, transferable, evolving memory | ERC-7857 encrypted, evolving memory with secure transfer |
+
+Aeon competes less on raw model quality (which is increasingly commoditized) and more on **ownership, verifiable
+privacy, and portability** — properties incumbents are structurally not positioned to offer.
+
+---
+
+## 8. Business model
+
+- **Mint fees** on companion creation.
+- **Secondary-market royalties** via EIP-2981 on resale of companions.
+- **Premium features**: advanced/long-context models, voice, avatars, larger memory.
+- **Marketplace take rate** on companion and creator-persona transactions (as the marketplace matures).
+- **Creator / B2B**: branded or signature companions with revenue sharing.
+
+Revenue scales with companions minted and their lifetime transaction activity rather than with monthly
+subscriptions, aligning monetization with ownership.
+
+---
+
+## 9. Go-to-market and growth
+
+- **Beachhead:** privacy-conscious and crypto-native early adopters reachable through the 0G ecosystem and
+  AI-asset marketplaces; a low-friction "mint your companion" entry point.
+- **Expansion:** voice and avatar modalities; a marketplace with royalties; creator-minted personas; and a
+  portability layer that lets a companion be used across applications.
+- **Long-term:** establish the ownership and transfer rails for personal AI as an asset class — the durable
+  position if the broader market shifts from rental to ownership.
+
+---
+
+## 10. Risks and mitigations
+
+| Risk | Assessment | Mitigation |
+|------|------------|------------|
+| Near-term monetization smaller than headline forecasts | Real (in-app spend ~$120M in 2025) | Plan around engaged-user growth and transaction economics; avoid subscription-only assumptions |
+| Key-management and wallet UX friction | Significant for mainstream users | Non-custodial defaults with progressively simpler onboarding; clear recovery guidance |
+| Dependence on specific models/providers | Moderate | OpenAI-compatible interface allows substitution across 0G Compute providers/models |
+| Evolving standards and SDKs (ERC-7857, 0G SDKs) | Moderate | Track standard/SDK versions; isolate integration behind a thin library layer |
+| Regulatory and content-safety considerations for companions | Sector-wide | Safety tooling, clear policies, and verifiable-privacy posture as a differentiator |
+
+---
+
+## 11. Conclusion
+
+Consumer AI is large and growing quickly, but the relationships people form with AI are still rented and private
+only by policy. Aeon's thesis is that **ownership and verifiable privacy** are where durable value accrues, and
+that 0G uniquely provides the integrated infrastructure to deliver them. The near-term revenue pool is modest
+relative to the largest forecasts, which is precisely why building the **ownership rails** early — rather than
+competing on commoditized model access — is the defensible position.
+
+---
+
+## Sources
+
+Market figures above are drawn from third-party research and reporting and are estimates that vary by
+methodology:
+
+- AI companion market & adoption: Precedence Research; Business Research Insights; Fundamental Business
+  Insights; NovaEdge Digital Labs (≈50M users); companionguide.ai (≈$120M in-app spend, 2025).
+- Generative AI market: Statista; Grand View Research; Mordor Intelligence; Coherent Market Insights.
+- Confidential computing / TEE: Fortune Business Insights; Mordor Intelligence.
