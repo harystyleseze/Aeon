@@ -64,7 +64,7 @@ export async function chat(
   // The privacy proof: verify the response came from a genuine TEE.
   let teeVerified = false;
   try {
-    if (chatID) teeVerified = await broker.inference.processResponse(provider, chatID);
+    if (chatID) teeVerified = (await broker.inference.processResponse(provider, chatID)) ?? false;
   } catch (e) {
     console.warn("processResponse:", e);
   }

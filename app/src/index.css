@@ -2,19 +2,125 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  @apply bg-aeon-bg text-slate-100 antialiased;
-  background-image: radial-gradient(60% 50% at 50% 0%, rgba(124, 92, 255, 0.18), transparent),
-    radial-gradient(40% 40% at 80% 100%, rgba(34, 211, 238, 0.12), transparent);
-  min-height: 100vh;
+/* ===== Theme tokens (ported from the Aeon design reference) ===== */
+[data-theme="hearth"] {
+  --bg: #f4ede2;
+  --bg2: #ede4d6;
+  --panel: #fffdf8;
+  --panel2: #f9f3ea;
+  --ink: #2a251f;
+  --ink-soft: #6a5f52;
+  --muted: #988c7c;
+  --line: rgba(42, 37, 31, 0.1);
+  --line2: rgba(42, 37, 31, 0.16);
+  --accent: #c25a2a;
+  --accent-soft: #e09863;
+  --accent-tint: #f6e7d9;
+  --good: #5d7a4f;
+  --good-tint: #e7efe1;
+  --shadow: 0 1px 2px rgba(42, 37, 31, 0.05), 0 10px 30px rgba(42, 37, 31, 0.07);
+  --shadow-lg: 0 2px 6px rgba(42, 37, 31, 0.06), 0 30px 70px rgba(42, 37, 31, 0.12);
+}
+[data-theme="dusk"] {
+  --bg: #171210;
+  --bg2: #1d1713;
+  --panel: #241d18;
+  --panel2: #2c241d;
+  --ink: #f1e7d9;
+  --ink-soft: #c6b9a6;
+  --muted: #988a77;
+  --line: rgba(241, 231, 217, 0.1);
+  --line2: rgba(241, 231, 217, 0.17);
+  --accent: #e07a3e;
+  --accent-soft: #b9622f;
+  --accent-tint: #2f2117;
+  --good: #94b380;
+  --good-tint: #23291f;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 14px 40px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 2px 8px rgba(0, 0, 0, 0.4), 0 40px 90px rgba(0, 0, 0, 0.55);
 }
 
-.chip {
-  @apply inline-flex items-center gap-1 rounded-full bg-white/5 px-3 py-1 text-xs font-mono text-slate-300 ring-1 ring-white/10;
+* {
+  box-sizing: border-box;
 }
-.btn {
-  @apply rounded-xl bg-gradient-to-r from-aeon-glow to-aeon-glow2 px-5 py-2.5 font-medium text-white shadow-lg transition hover:opacity-90 disabled:opacity-40;
+html,
+body {
+  margin: 0;
+  padding: 0;
 }
-.card {
-  @apply rounded-2xl bg-white/5 p-5 ring-1 ring-white/10 backdrop-blur;
+body {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Manrope", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.4s ease, color 0.4s ease;
+}
+::selection {
+  background: var(--accent);
+  color: #fff;
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+}
+input:focus,
+textarea:focus {
+  outline: none;
+}
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line2);
+  border-radius: 20px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ===== Reusable component classes built on the tokens ===== */
+@layer components {
+  .btn {
+    @apply cursor-pointer rounded-full bg-accent px-7 py-3.5 font-sans text-base font-semibold text-white transition;
+    box-shadow: var(--shadow);
+  }
+  .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+  .btn:disabled {
+    @apply cursor-not-allowed opacity-40;
+    transform: none;
+  }
+  .btn-ghost {
+    @apply cursor-pointer rounded-full border px-3.5 py-2 font-sans text-[12.5px] font-semibold text-ink transition;
+    background: var(--panel);
+    border-color: var(--line);
+  }
+  .card {
+    @apply rounded-2xl border p-5;
+    background: var(--panel);
+    border-color: var(--line);
+    box-shadow: var(--shadow);
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-xs;
+    color: var(--ink-soft);
+    background: var(--panel);
+    border-color: var(--line);
+  }
+  .field {
+    @apply w-full rounded-xl border px-4 py-3.5 text-ink transition;
+    background: var(--panel);
+    border-color: var(--line2);
+  }
+  .field:focus {
+    border-color: var(--accent);
+  }
 }

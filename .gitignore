@@ -5,4 +5,5 @@ dist/
 **/artifacts/
 **/cache/
 **/typechain-types/
+*.tsbuildinfo
 .DS_Store
