@@ -217,6 +217,20 @@ the function runtime and the SPA rewrite.
 
 ---
 
+## API security
+
+The server endpoints hold funded keys (`ROUTER_API_KEY`, `STORAGE_PRIVATE_KEY`), so they are guarded
+(`app/api/_lib/guard.ts`):
+
+- **Wallet-signature auth** — every `/api/*` call carries an `x-aeon-auth` token: the timestamped session
+  message the wallet already signs on connect, verified server-side (`ethers.verifyMessage`, ≤24h freshness).
+- **Origin allowlist** — requests must come from localhost, `*.vercel.app`, or an origin in `ALLOWED_ORIGINS`.
+- **Rate limiting** — per-IP and per-address fixed-window limits (in-memory; back with a shared store for
+  hardened production).
+- **Upload size cap** — `MAX_UPLOAD_BYTES` (2 MB default) rejects oversized blobs.
+
+Memory is ECIES-encrypted on the client before upload, so the server (and storage nodes) only see ciphertext.
+
 ## Testing checklist
 
 - Contract deploys; `mint` and `transferFrom` succeed; `updateMemoryRoot` rejects non-owner/non-oracle.

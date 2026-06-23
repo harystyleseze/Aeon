@@ -1,33 +1,41 @@
 // Local dev API server. Mirrors the Vercel functions in app/api/* using the
-// same shared handlers, so `npm run dev` gives a full end-to-end local stack.
+// same shared handlers + guard, so `npm run dev` gives a full end-to-end local stack.
 import "dotenv/config";
 import express from "express";
 import { chatComplete, storageUpload, storageDownload } from "../api/_lib/handlers";
+import { guard, GuardError } from "../api/_lib/guard";
 
 const app = express();
-app.use(express.json({ limit: "25mb" }));
+app.use(express.json({ limit: "3mb" }));
+
+function fail(res: express.Response, e: any) {
+  res.status(e instanceof GuardError ? e.status : 500).json({ error: e?.message || "error" });
+}
 
 app.post("/api/chat", async (req, res) => {
   try {
+    guard({ origin: req.headers.origin, headers: req.headers, authToken: req.headers["x-aeon-auth"] as string, perMinute: 20 });
     res.json(await chatComplete({ messages: req.body?.messages, model: req.body?.model }));
   } catch (e: any) {
-    res.status(500).json({ error: e?.message || "chat failed" });
+    fail(res, e);
   }
 });
 
 app.post("/api/storage/upload", async (req, res) => {
   try {
+    guard({ origin: req.headers.origin, headers: req.headers, authToken: req.headers["x-aeon-auth"] as string, perMinute: 30 });
     res.json(await storageUpload(req.body?.data));
   } catch (e: any) {
-    res.status(500).json({ error: e?.message || "upload failed" });
+    fail(res, e);
   }
 });
 
 app.get("/api/storage/download", async (req, res) => {
   try {
+    guard({ origin: req.headers.origin, headers: req.headers, authToken: req.headers["x-aeon-auth"] as string, perMinute: 30 });
     res.json(await storageDownload(String(req.query.root || "")));
   } catch (e: any) {
-    res.status(500).json({ error: e?.message || "download failed" });
+    fail(res, e);
   }
 });
 

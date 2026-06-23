@@ -1,4 +1,5 @@
 import { CONFIG } from "../../config";
+import { authHeaders } from "../auth";
 
 /**
  * 0G Storage via the server API.
@@ -25,7 +26,7 @@ function b64ToBytes(b64: string): Uint8Array {
 export async function uploadEncrypted(data: Uint8Array): Promise<{ rootHash: string; txHash: string }> {
   const res = await fetch(`${CONFIG.API_BASE}/api/storage/upload`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ data: bytesToB64(data) }),
   });
   const json = await res.json();
@@ -35,7 +36,9 @@ export async function uploadEncrypted(data: Uint8Array): Promise<{ rootHash: str
 
 /** Download encrypted bytes by root hash. */
 export async function downloadEncrypted(rootHash: string): Promise<Uint8Array> {
-  const res = await fetch(`${CONFIG.API_BASE}/api/storage/download?root=${encodeURIComponent(rootHash)}`);
+  const res = await fetch(`${CONFIG.API_BASE}/api/storage/download?root=${encodeURIComponent(rootHash)}`, {
+    headers: { ...authHeaders() },
+  });
   const json = await res.json();
   if (!res.ok) throw new Error(json?.error || "storage download failed");
   return b64ToBytes(json.dataB64);

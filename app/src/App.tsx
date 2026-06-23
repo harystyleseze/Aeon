@@ -4,6 +4,7 @@ import { getSigner, mintCompanion, updateMemoryRoot, transferCompanion } from ".
 import { chat } from "./lib/0g/compute";
 import { uploadEncrypted } from "./lib/0g/storage";
 import { encryptForPubKey } from "./lib/0g/crypto";
+import { sessionMessage, buildAuthToken, setAuthToken } from "./lib/auth";
 import { essenceById, encodePersonaSeed, systemPromptFor } from "./data/essences";
 import { TopBar } from "./components/TopBar";
 import { Landing } from "./screens/Landing";
@@ -71,9 +72,12 @@ export default function App() {
       setConnecting(true);
       const s = await getSigner();
       const a = await s.getAddress();
-      const msg = "Aeon: derive my companion encryption key";
+      // One signature serves two purposes: derive the ECIES key AND authenticate API calls.
+      const issuedAt = Date.now();
+      const msg = sessionMessage(issuedAt);
       const sig = await s.signMessage(msg);
       const pk = SigningKey.recoverPublicKey(getBytes(hashMessage(msg)), sig);
+      setAuthToken(buildAuthToken(a, issuedAt, sig));
       setSigner(s);
       setAddr(a);
       setPubKey(pk);

@@ -8,6 +8,7 @@ import os from "node:os";
 import path from "node:path";
 import { ethers } from "ethers";
 import { Indexer, MemData } from "@0gfoundation/0g-storage-ts-sdk";
+import { MAX_UPLOAD_BYTES } from "./guard";
 
 const env = (k: string, fallback = "") => process.env[k] ?? fallback;
 
@@ -70,6 +71,9 @@ function storageSigner(): ethers.Wallet {
 export async function storageUpload(bytesB64: string): Promise<{ rootHash: string; txHash: string }> {
   if (!bytesB64) throw new Error("data (base64) is required");
   const bytes = Buffer.from(bytesB64, "base64");
+  if (bytes.length > MAX_UPLOAD_BYTES) {
+    throw new Error(`payload too large (${bytes.length} > ${MAX_UPLOAD_BYTES} bytes)`);
+  }
   const indexer = new Indexer(INDEXER_RPC());
   const mem = new MemData(bytes);
   const [tree, treeErr] = await mem.merkleTree();
