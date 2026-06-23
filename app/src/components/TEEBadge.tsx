@@ -1,6 +1,5 @@
 export function TEEBadge({
   verified,
-  attestation,
   time,
 }: {
   verified: boolean | null;
@@ -8,22 +7,24 @@ export function TEEBadge({
   time?: string;
 }) {
   if (verified === null || verified === undefined) return null;
-  const attShort = attestation ? attestation.slice(0, 8) + "…" : "";
   return (
-    <div className="mt-[7px] flex items-center gap-[7px] font-mono text-[11px]" style={{ color: verified ? "var(--good)" : "var(--muted)" }}>
+    <div
+      className="mt-[7px] flex items-center gap-[7px] font-mono text-[11px]"
+      style={{ color: verified ? "var(--good)" : "var(--muted)" }}
+    >
       <span
         className="inline-flex items-center gap-1 rounded-full px-2 py-[3px]"
         style={{ background: verified ? "var(--good-tint)" : "var(--panel2)" }}
         title={
           verified
-            ? "Verified: this response ran in a 0G Compute TEE. The provider could not read your prompt."
-            : "TEE signature not verified for this response."
+            ? "Private: this response was generated inside a 0G Compute Router TEE enclave. The inference provider cannot read your prompt."
+            : "This response was not processed via the 0G Compute Router TEE."
         }
       >
         <span>{verified ? "🔒" : "⚠"}</span>
-        {verified ? "TEE-verified" : "TEE unverified"}
+        {verified ? "Private · 0G TEE" : "not private"}
       </span>
-      {attShort && <span className="text-muted">attestation {attShort}</span>}
+      {verified && <span className="text-muted">0G Compute Router</span>}
       {time && <span className="text-muted">· {time}</span>}
     </div>
   );

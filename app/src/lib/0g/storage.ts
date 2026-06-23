@@ -1,50 +1,42 @@
-import { Indexer, MemData } from "@0gfoundation/0g-storage-ts-sdk";
-import type { JsonRpcSigner } from "ethers";
 import { CONFIG } from "../../config";
 
 /**
- * 0G Storage: upload the encrypted memory blob, get a root hash (the on-chain pointer).
+ * 0G Storage via the server API.
  *
- * BROWSER CAVEAT (from 0G docs): the standard `indexer.download()` does not work in the
- * browser — use segment-based download (downloadSegmentByTxSeq) via a StorageNode client,
- * or proxy downloads through a thin serverless endpoint. For the demo we upload from the
- * browser (user-signed) and read back via the segment API.
+ * The 0G Storage SDK is Node-only (filesystem/streams), so uploads/downloads run
+ * on the server (app/api/storage/*). The browser only ever sends/receives
+ * ciphertext — the client encrypts (ECIES) before upload and decrypts after
+ * download, so the server cannot read memory contents.
  */
 
-let indexer: Indexer | null = null;
-function getIndexer(): Indexer {
-  if (!indexer) indexer = new Indexer(CONFIG.INDEXER_RPC);
-  return indexer;
+function bytesToB64(bytes: Uint8Array): string {
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+function b64ToBytes(b64: string): Uint8Array {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
 }
 
-/** Upload encrypted bytes; returns the 0G Storage root hash (bytes32-compatible hex). */
-export async function uploadEncrypted(
-  signer: JsonRpcSigner,
-  data: Uint8Array
-): Promise<{ rootHash: string; txHash: string }> {
-  const idx = getIndexer();
-  const mem = new MemData(Buffer.from(data));
-  const [tree, treeErr] = await mem.merkleTree();
-  if (treeErr) throw treeErr;
-  const rootHash = tree?.rootHash?.() ?? tree?.rootHash ?? "";
-
-  // Upload signs with the user's wallet via the EVM RPC.
-  const [tx, uploadErr] = await idx.upload(mem as any, CONFIG.ZG_RPC, signer as any);
-  if (uploadErr) throw uploadErr;
-
-  return { rootHash: String(rootHash), txHash: String(tx) };
+/** Upload encrypted bytes; returns the 0G Storage root hash (bytes32 hex) + tx. */
+export async function uploadEncrypted(data: Uint8Array): Promise<{ rootHash: string; txHash: string }> {
+  const res = await fetch(`${CONFIG.API_BASE}/api/storage/upload`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ data: bytesToB64(data) }),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json?.error || "storage upload failed");
+  return json;
 }
 
-/**
- * Download by root hash. In the browser, prefer a segment download or a serverless proxy.
- * This helper is a placeholder that should call StorageNode.downloadSegmentByTxSeq() or a
- * /api/download?root=... edge function. Returns the encrypted bytes.
- */
+/** Download encrypted bytes by root hash. */
 export async function downloadEncrypted(rootHash: string): Promise<Uint8Array> {
-  // TODO (build): implement segment download or serverless proxy per 0G docs.
-  // For the group-stage "sealed memory" demo we only need to PROVE the blob exists
-  // on-chain (via the root hash); full client-side download lands with the oracle build.
-  throw new Error(
-    `downloadEncrypted not yet wired for root ${rootHash} — use segment download / edge proxy`
-  );
+  const res = await fetch(`${CONFIG.API_BASE}/api/storage/download?root=${encodeURIComponent(rootHash)}`);
+  const json = await res.json();
+  if (!res.ok) throw new Error(json?.error || "storage download failed");
+  return b64ToBytes(json.dataB64);
 }

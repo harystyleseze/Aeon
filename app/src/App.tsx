@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import { JsonRpcSigner, ZeroHash, hashMessage, SigningKey, getBytes, hexlify, isHexString } from "ethers";
 import { getSigner, mintCompanion, updateMemoryRoot, transferCompanion } from "./lib/0g/chain";
-import { initBroker, ensureFunded, ackProvider, chat, type Broker } from "./lib/0g/compute";
+import { chat } from "./lib/0g/compute";
 import { uploadEncrypted } from "./lib/0g/storage";
 import { encryptForPubKey } from "./lib/0g/crypto";
-import { CONFIG } from "./config";
 import { essenceById, encodePersonaSeed, systemPromptFor } from "./data/essences";
 import { TopBar } from "./components/TopBar";
 import { Landing } from "./screens/Landing";
@@ -45,7 +44,6 @@ export default function App() {
   const [signer, setSigner] = useState<JsonRpcSigner | null>(null);
   const [addr, setAddr] = useState("");
   const [pubKey, setPubKey] = useState("");
-  const [broker, setBroker] = useState<Broker | null>(null);
   const [connecting, setConnecting] = useState(false);
 
   // mint inputs
@@ -67,7 +65,6 @@ export default function App() {
   const [transferTx, setTransferTx] = useState("");
 
   const owned = !!(companion && addr && companion.owner.toLowerCase() === addr.toLowerCase());
-  const systemPrompt = () => systemPromptFor(pendingEssence, customPersona);
 
   async function connect() {
     try {
@@ -80,20 +77,10 @@ export default function App() {
       setSigner(s);
       setAddr(a);
       setPubKey(pk);
-      const b = await initBroker(s);
-      await ensureFunded(b);
-      if (CONFIG.COMPUTE_PROVIDER) {
-        try {
-          await ackProvider(b, CONFIG.COMPUTE_PROVIDER);
-        } catch (e) {
-          console.warn("ackProvider:", e);
-        }
-      }
-      setBroker(b);
       setView("mint");
     } catch (e) {
       console.error(e);
-      alert("Could not connect wallet. Make sure MetaMask is installed and on the 0G network.");
+      alert("Could not connect wallet. Make sure MetaMask is installed and on the 0G Galileo network.");
     } finally {
       setConnecting(false);
     }
@@ -120,7 +107,7 @@ export default function App() {
       const genesis = encrypt(JSON.stringify({ name, essence: pendingEssence, born: now() }));
       genesisSize = (genesis.length / 1024).toFixed(1) + " KB";
       setMintStep(1);
-      const up = await uploadEncrypted(signer, genesis);
+      const up = await uploadEncrypted(genesis);
       const r32 = toBytes32(up.rootHash);
       if (r32) {
         genesisRoot = r32;
@@ -182,37 +169,22 @@ export default function App() {
     const history = [...messages, userMsg];
     setMessages(history);
 
-    if (!broker || !CONFIG.COMPUTE_PROVIDER) {
-      setMessages((m) => [
-        ...m,
-        {
-          id: Date.now() + 1,
-          role: "assistant",
-          content: "Set VITE_COMPUTE_PROVIDER to a 0G Compute provider to enable private TEE chat.",
-          time: now(),
-          tee: null,
-        },
-      ]);
-      return;
-    }
-
     setTyping(true);
     let reply = "";
     let tee: boolean | null = null;
-    let attestation = "";
     try {
-      const res = await chat(broker, CONFIG.COMPUTE_PROVIDER, [
+      const res = await chat([
         { role: "system", content: systemPromptFor(companion.essenceId, customPersona) },
         ...history.map((m) => ({ role: m.role, content: m.content })),
       ]);
       reply = res.content || "…";
-      tee = res.teeVerified;
-      attestation = res.chatID || "";
-    } catch (e) {
+      tee = res.tee;
+    } catch (e: any) {
       console.error("chat:", e);
-      reply = "I couldn't reach the TEE just now. Try again in a moment.";
+      reply =
+        "I couldn't reach the 0G Compute Router just now. Check that the chat API key is configured, then try again.";
     }
-    const aiMsg: Msg = { id: Date.now() + 2, role: "assistant", content: reply, time: now(), tee, attestation };
+    const aiMsg: Msg = { id: Date.now() + 2, role: "assistant", content: reply, time: now(), tee };
     const updated = [...history, aiMsg];
     setMessages(updated);
     setTyping(false);
@@ -221,7 +193,7 @@ export default function App() {
     try {
       const cipher = encrypt(JSON.stringify(updated));
       const newSize = sizeKB + cipher.length / 1024;
-      const up = await uploadEncrypted(signer, cipher);
+      const up = await uploadEncrypted(cipher);
       const r32 = toBytes32(up.rootHash);
       let memTx = up.txHash;
       if (r32) {

@@ -20,9 +20,9 @@ Built for the **0G Zero Cup**.
 - [Tech stack](#tech-stack)
 - [Getting started](#getting-started)
 - [Configuration](#configuration)
-- [How each 0G component is used](#how-each-0g-component-is-used)
+- [End-to-end testing runbook](#end-to-end-testing-runbook)
+- [Deploying to Vercel](#deploying-to-vercel)
 - [Testing checklist](#testing-checklist)
-- [Implementation notes](#implementation-notes)
 - [Roadmap](#roadmap)
 - [Documentation](#documentation)
 - [License](#license)
@@ -39,9 +39,8 @@ Aeon takes a different approach:
 
 - **Ownership.** A companion is minted as an Intelligent NFT on 0G Chain. The owner can hold it, transfer it,
   or pass it on.
-- **Verifiable privacy.** Conversations run inside a 0G Compute Trusted Execution Environment (TEE). The
-  application verifies the TEE signature for each response and surfaces the result in the UI, so privacy is
-  demonstrable rather than merely promised.
+- **Private inference.** Conversations run through the **0G Compute Router**, which executes inference inside a
+  TEE enclave; the API key stays server-side and the provider cannot read the prompt.
 - **Portable, evolving memory.** The companion's memory is encrypted on the client and stored on 0G Storage.
   Each conversation updates an on-chain pointer (`memoryRoot`), producing a verifiable record of how the
   memory grows over time.
@@ -50,38 +49,35 @@ Aeon takes a different approach:
 
 ## How it works: the four 0G pillars
 
-Aeon is designed so that each 0G component performs work that is not easily substitutable. Removing any one of
-them would materially reduce the product to a conventional chatbot.
-
 | Pillar | Role in Aeon |
 |--------|--------------|
-| **0G Chain + INFT (ERC-7857)** | The companion is represented as a token. Ownership, transfer, royalties (EIP-2981), and the `memoryRoot` pointer are recorded on-chain. |
-| **0G Compute (TEE)** | Each chat turn runs in a TEE; `processResponse` verifies a signature indicating the response came from a genuine enclave. |
-| **0G Storage** | The companion's encrypted memory is stored off-chain; each upload yields a content-addressed root hash referenced on-chain. |
-| **Re-encryption oracle** | On transfer, re-encrypts the memory for the new owner — the mechanism described by ERC-7857. *(Planned; see status below.)* |
+| **0G Chain + INFT (ERC-7857)** | The companion is a token. Ownership, transfer, royalties (EIP-2981), and the `memoryRoot` pointer are recorded on-chain (client-signed via MetaMask). |
+| **0G Compute (Router, TEE)** | Each chat turn is proxied by the app's server to the 0G Compute Router (OpenAI-compatible), which runs inference in a TEE enclave. |
+| **0G Storage** | The companion's encrypted memory is uploaded by the app's server (the SDK is Node-only); each upload yields a content-addressed root hash referenced on-chain. |
+| **Re-encryption oracle** | On transfer, re-encrypts the memory for the new owner — the mechanism described by ERC-7857. *(Planned; see status.)* |
+
+> The client encrypts memory (ECIES, to the owner's key) **before** it is sent to the server, so the server
+> only ever handles ciphertext.
 
 ---
 
 ## Project status
 
-This repository is a working prototype with a clearly scoped roadmap. The table below states what is
-implemented today versus what is planned.
+A working prototype with a clearly scoped roadmap.
 
 | Area | Current implementation | Roadmap |
 |------|------------------------|---------|
-| INFT contract | `AeonINFT.sol` (ERC-721 + ERC-2981, `memoryRoot`, guarded `updateMemoryRoot`, `setOracle`) | Formal tests; audit pass |
-| Mint / ownership | Mint and on-chain ownership via the dApp | — |
-| Chat | 0G Compute broker chat with per-response TEE verification badge | Streaming responses; model selection |
-| Memory (write) | Client-side ECIES encryption → 0G Storage upload → on-chain `memoryRoot` update → memory timeline | Memory-summary RAG for long histories |
-| Memory (read) | Upload and on-chain pointer are wired; browser **download/decrypt** is not yet implemented (`storage.ts:downloadEncrypted` is a stub) | Segment-based browser download + decrypt |
-| Transfer | `transferFrom` changes ownership on-chain; the new owner sees a verifiable "memory sealed" state | Live re-encryption (see oracle) |
-| Re-encryption oracle | Stub only (`oracle/reencrypt.ts`) | Cloudflare Worker that re-encrypts memory for the new owner on transfer |
-| Modalities | Text | Voice input (Whisper); avatar generation |
-| Marketplace | — | Listing, royalties UI |
+| INFT contract | `AeonINFT.sol` (ERC-721 + ERC-2981, `memoryRoot`, guarded `updateMemoryRoot`, `setOracle`) | Tests; audit |
+| Mint / ownership | Mint + on-chain ownership via MetaMask | — |
+| Chat | Server proxy to the 0G Compute Router (TEE); "Private · 0G TEE" badge | Streaming responses; model picker |
+| Memory (write) | Client-side ECIES encryption → server upload to 0G Storage → on-chain `memoryRoot` update → timeline | Memory-summary RAG for long histories |
+| Memory (read) | Server download endpoint (`/api/storage/download`) returns ciphertext for the owner to decrypt | Client restore/replay UI |
+| Transfer | `transferFrom` changes ownership on-chain; new owner sees a verifiable "memory sealed" state | Live re-encryption (oracle) |
+| Re-encryption oracle | Stub only (`oracle/reencrypt.ts`) | Worker that re-encrypts memory for the new owner on transfer |
 
-**On transfer behavior:** transferring a companion changes ownership on-chain immediately. The memory remains
-encrypted to the previous owner (a verifiable "sealed" state) until the re-encryption oracle re-encrypts it for
-the new owner. The oracle is on the roadmap; the current build does not move readable memory between owners.
+**On transfer:** ownership moves on-chain immediately. The memory stays encrypted to the previous owner (a
+verifiable "sealed" state) until the re-encryption oracle re-encrypts it for the new owner. The oracle is on
+the roadmap; the current build does not move readable memory between owners.
 
 ---
 
@@ -89,23 +85,21 @@ the new owner. The oracle is on the roadmap; the current build does not move rea
 
 ```
    Browser (Vite/React) + MetaMask
-     │ mint/transfer        │ chat                  │ encrypt + store
-     ▼                      ▼                       ▼
-  ┌────────────────┐  ┌─────────────────┐  ┌──────────────────┐
-  │ 0G Chain       │  │ 0G Compute (TEE)│  │ 0G Storage       │
-  │ AeonINFT.sol   │  │ GLM-5/DeepSeek  │  │ encrypted memory │
-  │ memoryRoot     │  │ TEE signature   │  │ → root hash      │
-  └──────┬─────────┘  └─────────────────┘  └──────────────────┘
-         │ Transfer event
-         ▼
+     │  mint / transfer / memoryRoot (client-signed)
+     ▼
+  ┌────────────────┐       ┌──────────────────────────── Server API (Vercel / Express) ───────────────────────────┐
+  │ 0G Chain (EVM) │       │  /api/chat            → 0G Compute Router (OpenAI-compatible, TEE)  [ROUTER_API_KEY]   │
+  │ AeonINFT.sol   │◀──────│  /api/storage/upload  → 0G Storage (Node SDK, server signer)        [STORAGE_PRIVATE…] │
+  │ memoryRoot     │       │  /api/storage/download← 0G Storage (by root hash)                                      │
+  └──────┬─────────┘       └────────────────────────────────────────────────────────────────────────────────────┘
+         │ Transfer event                         ▲
+         ▼                                        │ encrypted bytes only (client encrypts first, ECIES)
   ┌──────────────────────────────────────────┐
-  │ Re-encryption oracle (Cloudflare Worker)  │  (Planned)
-  │ ECIES re-encrypt memory → new owner       │
+  │ Re-encryption oracle (planned)            │
   └──────────────────────────────────────────┘
 ```
 
-Full technical detail (data flows, contract specification, security model, trust boundaries) is in
-**[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)**.
+Full technical detail (data flows, contract spec, security model, trust boundaries): **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)**.
 
 ---
 
@@ -113,27 +107,23 @@ Full technical detail (data flows, contract specification, security model, trust
 
 ```
 aeon/
-├── contracts/                 # Solidity + Hardhat
-│   ├── AeonINFT.sol           # ERC721 + ERC2981 + memoryRoot + oracle guard
-│   ├── hardhat.config.ts
-│   ├── scripts/deploy.ts
-│   └── .env.example
-├── app/                       # Vite + React + TS + Tailwind frontend
+├── contracts/                 # Solidity + Hardhat (deploy to 0G Galileo, chainId 16602)
+│   ├── AeonINFT.sol
+│   └── scripts/deploy.ts
+├── app/                       # Vite + React frontend AND the Node API
+│   ├── api/                   # Vercel serverless functions
+│   │   ├── chat.ts            # → 0G Compute Router
+│   │   ├── storage/upload.ts  # → 0G Storage (Node SDK)
+│   │   ├── storage/download.ts
+│   │   └── _lib/handlers.ts   # shared server logic (secrets live here)
+│   ├── server/dev.ts          # local Express server (same handlers) for `npm run dev`
 │   ├── src/
-│   │   ├── lib/0g/            # the 0G integration
-│   │   │   ├── chain.ts       # connect, mint, transfer, read/update memoryRoot
-│   │   │   ├── compute.ts     # broker: ack → chat → processResponse (TEE)
-│   │   │   ├── storage.ts     # 0G Storage upload (download is a stub)
-│   │   │   └── crypto.ts      # ECIES encrypt/decrypt
-│   │   ├── components/        # TEEBadge · MemoryTimeline · TransferModal
-│   │   ├── App.tsx            # orchestrates the full flow
-│   │   └── config.ts          # RPCs, contract addr, provider addr, ABI
-│   └── .env.example
-├── oracle/
-│   └── reencrypt.ts           # re-encryption oracle (Cloudflare Worker) — planned
-├── docs/
-│   ├── ARCHITECTURE.md        # technical reference
-│   └── PITCH_DECK.md          # market analysis & opportunity
+│   │   ├── lib/0g/            # chain.ts (wallet/mint/transfer) · compute.ts + storage.ts (call /api) · crypto.ts (ECIES)
+│   │   ├── components/ · screens/
+│   │   └── App.tsx · config.ts
+│   └── vercel.json
+├── oracle/reencrypt.ts        # re-encryption oracle (planned)
+├── docs/                      # ARCHITECTURE.md · PITCH_DECK.md
 └── README.md
 ```
 
@@ -141,12 +131,12 @@ aeon/
 
 ## Tech stack
 
-- **Frontend:** Vite, React, TypeScript, TailwindCSS, ethers v6 (`BrowserProvider`).
-- **0G SDKs:** `@0glabs/0g-serving-broker` (0G Compute), `@0gfoundation/0g-storage-ts-sdk` (0G Storage).
-- **Cryptography:** `eciesjs` (ECIES to the owner's secp256k1 key).
+- **Frontend:** Vite, React, TypeScript, Tailwind, ethers v6 (browser bundle is ethers + eciesjs only).
+- **Server API:** Node (Vercel functions in prod; Express for local dev) — proxies chat to the 0G Compute
+  Router and runs the Node 0G Storage SDK (`@0gfoundation/0g-storage-ts-sdk`).
+- **Cryptography:** `eciesjs` (ECIES to the owner's secp256k1 key), client-side.
 - **Contracts:** Solidity, OpenZeppelin (ERC-721 + ERC-2981), Hardhat.
-- **Network:** 0G Chain (EVM-compatible).
-- **Planned:** Cloudflare Worker for the re-encryption oracle.
+- **Network:** 0G Galileo testnet (chainId **16602**).
 
 ---
 
@@ -154,93 +144,96 @@ aeon/
 
 ### Prerequisites
 - Node.js 18+
-- MetaMask with 0G testnet gas tokens (a small balance is required to access 0G Compute)
-- A deployer private key (testnet only)
+- MetaMask, funded at [`faucet.0g.ai`](https://faucet.0g.ai) (0.1 0G/day)
+- A second testnet wallet for **storage** (server signer), also funded at the faucet
+- A 0G Compute Router API key (`app-sk-…`) from [`pc.testnet.0g.ai`](https://pc.testnet.0g.ai)
 
 ### 1) Deploy the contract
 ```bash
 cd contracts
 cp .env.example .env          # add PRIVATE_KEY (testnet)
-npm install
-npx hardhat compile
-npx hardhat run scripts/deploy.ts --network zerogTestnet
+npm install && npx hardhat compile
+npx hardhat run scripts/deploy.ts --network zerogTestnet   # chainId 16602
 # copy the printed AeonINFT address
 ```
 
-### 2) Run the app
+### 2) Configure + run the app (frontend + API together)
 ```bash
 cd ../app
-cp .env.example .env          # set VITE_AEON_CONTRACT and VITE_COMPUTE_PROVIDER
+cp .env.example .env          # fill client (VITE_*) + server vars (see below)
 npm install
-npm run dev                   # open the printed localhost URL
+npm run dev                   # starts Vite (web) AND the Express API together
 ```
-
-### 3) Select a 0G Compute provider
-With the broker initialized, call `broker.inference.listService()`, choose a chatbot-type provider, and set its
-address as `VITE_COMPUTE_PROVIDER`. The first use also performs a one-time on-chain
-`acknowledgeProviderSigner` (handled on connect).
+Open the printed localhost URL, connect MetaMask (it will prompt to add/switch to 0G Galileo), and mint.
 
 ---
 
 ## Configuration
 
-`app/.env`:
+`app/.env` has two halves — **client** (`VITE_*`, shipped to the browser) and **server** (secrets, never
+shipped). See `app/.env.example`.
+
 ```
-VITE_ZG_RPC=https://evmrpc-testnet.0g.ai          # confirm current testnet RPC
-VITE_ZG_CHAIN_ID=16601                             # confirm current testnet chainId
-VITE_INDEXER_RPC=https://indexer-storage-testnet-turbo.0g.ai
-VITE_AEON_CONTRACT=0x...                            # from deploy output
-VITE_COMPUTE_PROVIDER=0x...                         # selected provider
-VITE_DEFAULT_MODEL=glm-5
+# client
+VITE_ZG_RPC=https://evmrpc-testnet.0g.ai
+VITE_ZG_CHAIN_ID=16602
+VITE_EXPLORER=https://chainscan-galileo.0g.ai
+VITE_AEON_CONTRACT=0x...            # from deploy output
+
+# server (NEVER prefix with VITE_)
+ROUTER_BASE=https://router-api-testnet.integratenetwork.work/v1
+ROUTER_API_KEY=app-sk-...           # from pc.testnet.0g.ai
+ROUTER_MODEL=llama-3.3-70b-instruct
+ZG_RPC=https://evmrpc-testnet.0g.ai
+INDEXER_RPC=https://indexer-storage-testnet-turbo.0g.ai
+STORAGE_PRIVATE_KEY=0x...           # funded testnet wallet that pays for storage
 ```
-`contracts/.env`: `PRIVATE_KEY`, `ZG_RPC`.
 
 ---
 
-## How each 0G component is used
+## End-to-end testing runbook
 
-- **Mint** (`lib/0g/chain.ts`): `AeonINFT.mint(personaSeed, initialRoot)` creates the token and stores its
-  initial `memoryRoot`.
-- **Chat** (`lib/0g/compute.ts`): `initBroker` → `ensureFunded` → `acknowledgeProviderSigner` →
-  `getServiceMetadata` / `getRequestHeaders` → `POST {endpoint}/chat/completions` → `processResponse`
-  (TEE verification), surfaced via the badge.
-- **Memory** (`lib/0g/crypto.ts` + `lib/0g/storage.ts`): the transcript is ECIES-encrypted to the owner's
-  public key, uploaded to 0G Storage, and the resulting root hash is written on-chain via
-  `AeonINFT.updateMemoryRoot`.
-- **Transfer** (`lib/0g/chain.ts`): `AeonINFT.transferFrom(...)`; the new owner sees the verifiable "sealed
-  memory" state until the planned oracle re-encrypts it.
+1. **Fund** your MetaMask wallet **and** the `STORAGE_PRIVATE_KEY` wallet at `https://faucet.0g.ai`.
+2. **Create** a Compute Router key at `https://pc.testnet.0g.ai` (connect → deposit → create key) →
+   `ROUTER_API_KEY`.
+3. **Deploy** the contract (step 1 above) → set `VITE_AEON_CONTRACT`.
+4. **Configure** `app/.env` (client + server) and run `npm run dev`.
+5. **Connect** the wallet (approve add/switch to 0G Galileo) → **Mint** (genesis memory uploads via
+   `/api/storage`, then the mint tx) → **Chat** (replies come from the Compute Router with the "Private · 0G
+   TEE" badge; each turn seals memory to 0G Storage and updates `memoryRoot`) → **Transfer** to a second
+   address (`transferFrom`).
+6. **Verify** every tx on `https://chainscan-galileo.0g.ai`.
+
+> If `VITE_CHAIN_ID`/RPC ever change upstream, update the client + server env; the app reads them at runtime.
+
+---
+
+## Deploying to Vercel
+
+Import the **`app/`** directory as the Vercel project (framework: Vite). The `api/` folder deploys as Node
+serverless functions automatically. Set the **server** env vars (`ROUTER_*`, `ZG_RPC`, `INDEXER_RPC`,
+`STORAGE_PRIVATE_KEY`) and the client `VITE_*` vars in the Vercel project settings. `vercel.json` configures
+the function runtime and the SPA rewrite.
 
 ---
 
 ## Testing checklist
 
-- Contract deploys; `mint` and `transferFrom` succeed; `updateMemoryRoot` rejects callers that are neither the
-  owner nor the oracle.
-- `acknowledgeProviderSigner` succeeds once; chat returns a response; `processResponse` returns a valid TEE
-  signature and the badge reflects it.
-- Encrypt → 0G Storage upload → `memoryRoot` written on-chain → the memory timeline updates.
-- End-to-end: mint → chat → memory pointer updates → transfer → new owner sees the "sealed memory" state.
-
----
-
-## Implementation notes
-
-- Confirm the current 0G testnet **chainId, RPC, and indexer endpoints** against the 0G documentation.
-- Confirm the broker package name/version (`@0glabs/0g-serving-broker` vs `0gfoundation/0g-serving-user-broker`)
-  and verify SDK method signatures against the installed version.
-- Browser reads from 0G Storage require segment-based download (`downloadSegmentByTxSeq()`); the standard
-  `indexer.download()` is not suitable in the browser. The current `storage.ts:downloadEncrypted` is a stub.
+- Contract deploys; `mint` and `transferFrom` succeed; `updateMemoryRoot` rejects non-owner/non-oracle.
+- `npm run dev` serves the app and the API; `GET /api/health` returns `{ ok: true }`.
+- Chat returns a Compute Router reply with the "Private · 0G TEE" badge.
+- Encrypt → `/api/storage/upload` returns a real `rootHash` → `updateMemoryRoot` tx → memory timeline updates.
+- E2E: mint → chat → memory pointer updates → transfer → new owner sees the "sealed memory" state.
 
 ---
 
 ## Roadmap
 
-- [ ] Re-encryption oracle (Cloudflare Worker) so memory transfers with the companion.
-- [ ] Browser-side memory download and decryption.
-- [ ] Voice input (Whisper) and avatar generation.
+- [ ] Re-encryption oracle so memory transfers (readable) with the companion.
+- [ ] Client-side memory restore/replay from `/api/storage/download`.
+- [ ] Streaming chat responses + model picker.
 - [ ] Marketplace and royalties UI (EIP-2981 is already supported by the contract).
-- [ ] Memory-summary RAG for long-horizon continuity.
-- [ ] Contract test suite and audit.
+- [ ] Contract test suite + audit.
 
 ---
 
@@ -257,6 +250,6 @@ MIT (see source headers). Open-source libraries are used under their respective 
 
 <div align="center">
 
-Built on **0G** · INFT (ERC-7857) + 0G Compute TEE + 0G Storage
+Built on **0G** · INFT (ERC-7857) + 0G Compute Router (TEE) + 0G Storage
 
 </div>

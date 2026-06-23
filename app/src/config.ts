@@ -1,25 +1,19 @@
-// Central config. Fill via app/.env (Vite exposes VITE_*).
+// Client config. Only VITE_* values are exposed to the browser.
+// Server secrets (router key, storage key) live in the API env, never here.
 export const CONFIG = {
-  // 0G Chain (testnet). VERIFY current values in the 0G docs.
+  // 0G Galileo testnet. VERIFY against https://docs.0g.ai if values change.
   ZG_RPC: import.meta.env.VITE_ZG_RPC ?? "https://evmrpc-testnet.0g.ai",
-  ZG_CHAIN_ID: Number(import.meta.env.VITE_ZG_CHAIN_ID ?? 16601), // <-- verify
+  ZG_CHAIN_ID: Number(import.meta.env.VITE_ZG_CHAIN_ID ?? 16602),
+  EXPLORER: import.meta.env.VITE_EXPLORER ?? "https://chainscan-galileo.0g.ai",
 
-  // 0G Storage
-  INDEXER_RPC:
-    import.meta.env.VITE_INDEXER_RPC ??
-    "https://indexer-storage-testnet-turbo.0g.ai",
-
-  // Deployed AeonINFT address (from contracts/scripts/deploy.ts output)
+  // Deployed AeonINFT address (from contracts/scripts/deploy.ts output).
   AEON_CONTRACT: import.meta.env.VITE_AEON_CONTRACT ?? "",
 
-  // 0G Compute provider address to pin for the demo (call broker.inference.listService()
-  // once, pick a tested chatbot provider, and hard-code it here for reliability).
-  COMPUTE_PROVIDER: import.meta.env.VITE_COMPUTE_PROVIDER ?? "",
-
-  // Default model id served by the chosen provider (e.g. GLM-5). getServiceMetadata()
-  // also returns the model; this is a UI hint/fallback.
-  DEFAULT_MODEL: import.meta.env.VITE_DEFAULT_MODEL ?? "glm-5",
+  // Chat/storage run through the server API (same origin: /api/*).
+  API_BASE: import.meta.env.VITE_API_BASE ?? "",
 };
+
+export const CHAIN_ID_HEX = "0x" + CONFIG.ZG_CHAIN_ID.toString(16);
 
 // Minimal ABI for the AeonINFT contract (matches AeonINFT.sol).
 export const AEON_ABI = [

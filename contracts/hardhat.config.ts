@@ -17,7 +17,7 @@ const config: HardhatUserConfig = {
     zerogTestnet: {
       url: ZG_RPC,
       accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],
-      // chainId: 16601, // <-- VERIFY current 0G testnet chainId before deploy
+      chainId: 16602, // 0G Galileo testnet
     },
   },
 };

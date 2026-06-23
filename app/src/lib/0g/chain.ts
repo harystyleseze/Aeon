@@ -1,11 +1,39 @@
 import { BrowserProvider, Contract, JsonRpcSigner } from "ethers";
-import { AEON_ABI, CONFIG } from "../../config";
+import { AEON_ABI, CHAIN_ID_HEX, CONFIG } from "../../config";
+
+/** Ensure the wallet is on 0G Galileo testnet (switch, or add it if unknown). */
+export async function ensureNetwork(): Promise<void> {
+  const eth = (window as any).ethereum;
+  if (!eth) throw new Error("Please install MetaMask");
+  try {
+    await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: CHAIN_ID_HEX }] });
+  } catch (err: any) {
+    // 4902 = chain not added to the wallet yet
+    if (err?.code === 4902 || /Unrecognized chain/i.test(err?.message || "")) {
+      await eth.request({
+        method: "wallet_addEthereumChain",
+        params: [
+          {
+            chainId: CHAIN_ID_HEX,
+            chainName: "0G Galileo Testnet",
+            nativeCurrency: { name: "0G", symbol: "0G", decimals: 18 },
+            rpcUrls: [CONFIG.ZG_RPC],
+            blockExplorerUrls: [CONFIG.EXPLORER],
+          },
+        ],
+      });
+    } else {
+      throw err;
+    }
+  }
+}
 
 export async function getSigner(): Promise<JsonRpcSigner> {
   const eth = (window as any).ethereum;
   if (!eth) throw new Error("Please install MetaMask");
   const provider = new BrowserProvider(eth);
   await provider.send("eth_requestAccounts", []);
+  await ensureNetwork();
   return provider.getSigner();
 }
 
